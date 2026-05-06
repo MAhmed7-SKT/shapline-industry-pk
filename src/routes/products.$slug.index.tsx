@@ -62,12 +62,12 @@ function CategoryPage() {
     const refresh = () => load();
     load();
 
+    // The storage/event listeners are no longer needed as Firebase handles real-time sync via manual refresh or logic
+    // but we can keep them if other parts of the app still trigger them.
     if (typeof window !== "undefined") {
-      window.addEventListener("storage", refresh);
       window.addEventListener("shapline_products_updated", refresh as EventListener);
       window.addEventListener("productsUpdated", refresh as EventListener);
       return () => {
-        window.removeEventListener("storage", refresh);
         window.removeEventListener("shapline_products_updated", refresh as EventListener);
         window.removeEventListener("productsUpdated", refresh as EventListener);
       };
