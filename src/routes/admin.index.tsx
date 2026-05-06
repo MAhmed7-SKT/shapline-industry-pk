@@ -10,7 +10,7 @@ export const Route = createFileRoute("/admin/")({
 });
 
 const CLOUDINARY_UPLOAD_PRESET = "shapline_upload";
-const CLOUDINARY_CLOUD_NAME = "dlvfx1rne";
+const CLOUDINARY_CLOUD_NAME = "dlvcuc422";
 const CLOUDINARY_FOLDER = "products";
 
 export function AdminDashboard() {
