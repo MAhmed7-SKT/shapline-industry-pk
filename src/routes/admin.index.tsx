@@ -103,19 +103,33 @@ export function AdminDashboard() {
       const uploadedUrls =
         images.length > 0
           ? await Promise.all(
-              images.map(async (file) => {
-                const data = new FormData();
-                data.append("file", file);
-                data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-                data.append("folder", CLOUDINARY_FOLDER);
+              images.map((file) => {
+                return new Promise<string>((resolve, reject) => {
+                  const xhr = new XMLHttpRequest();
+                  const data = new FormData();
+                  data.append("file", file);
+                  data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+                  data.append("folder", CLOUDINARY_FOLDER);
 
-                const res = await fetch(
-                  `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-                  { method: "POST", body: data }
-                );
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error?.message || "Upload failed");
-                return json.secure_url as string;
+                  xhr.open(
+                    "POST",
+                    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    true
+                  );
+
+                  xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                      const response = JSON.parse(xhr.responseText);
+                      resolve(response.secure_url);
+                    } else {
+                      const error = JSON.parse(xhr.responseText);
+                      reject(new Error(error.error?.message || "Upload failed"));
+                    }
+                  };
+
+                  xhr.onerror = () => reject(new Error("Network error during upload"));
+                  xhr.send(data);
+                });
               })
             )
           : [];
@@ -235,7 +249,13 @@ export function AdminDashboard() {
                   <label className="aspect-square border-2 border-dashed border-white/10 hover:border-electric transition-colors cursor-pointer flex flex-col items-center justify-center gap-2 text-steel hover:text-electric">
                     <Plus className="size-8" />
                     <span className="text-[10px] uppercase font-bold tracking-widest text-center px-2">Add Photos</span>
-                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleImageChange} 
+                    />
                   </label>
                 </div>
               </div>
