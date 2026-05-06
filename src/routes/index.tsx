@@ -59,7 +59,7 @@ const SLIDES: Slide[] = [
   },
   {
     eyebrow: "Trusted by professionals",
-    headline: "FROM SIALKOT TO THE WORLD",
+    headline: "FROM SIALKOT TO WHOLE WORLD",
     subline: "Trusted by Barbers, Beauticians & Medical Professionals Globally",
     image: heroSlide2,
   },

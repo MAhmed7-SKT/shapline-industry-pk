@@ -13,9 +13,9 @@ import blog6 from "@/assets/blog-6.jpg";
 export const Route = createFileRoute("/blog/")({
   head: () => ({
     meta: [
-      { title: "Blog — From Sialkot to the World | Shapline Industry" },
+      { title: "Blog — From Sialkot to Whole World | Shapline Industry" },
       { name: "description", content: "Stories on Sialkot's surgical instrument heritage, manufacturing craft and global export of professional scissors." },
-      { property: "og:title", content: "From Sialkot to the World" },
+      { property: "og:title", content: "From Sialkot to Whole World" },
       { property: "og:description", content: "Inside Sialkot's century of surgical and beauty instrument craftsmanship." },
       { property: "og:image", content: featureImg },
     ],
@@ -42,7 +42,7 @@ const posts = [
 function BlogPage() {
   return (
     <SiteShell>
-      <PageHeader title="FROM SIALKOT TO THE WORLD" subtitle="The legacy & glory of Pakistan's manufacturing capital" crumbs={[{ label: "Blog" }]} />
+      <PageHeader title="FROM SIALKOT TO WHOLE WORLD" subtitle="The legacy & glory of Pakistan's manufacturing capital" crumbs={[{ label: "Blog" }]} />
 
       <section className="py-16 md:py-24 bg-charcoal border-b border-white/10">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-10">
