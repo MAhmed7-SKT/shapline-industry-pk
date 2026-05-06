@@ -46,11 +46,9 @@ function ProductsIndex() {
     load();
 
     if (typeof window !== "undefined") {
-      window.addEventListener("storage", refresh);
       window.addEventListener("shapline_products_updated", refresh as EventListener);
       window.addEventListener("productsUpdated", refresh as EventListener);
       return () => {
-        window.removeEventListener("storage", refresh);
         window.removeEventListener("shapline_products_updated", refresh as EventListener);
         window.removeEventListener("productsUpdated", refresh as EventListener);
       };
