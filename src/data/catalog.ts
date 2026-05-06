@@ -8,6 +8,21 @@ import smallImg from "@/assets/cat-small.jpg";
 import haircutImg from "@/assets/cat-haircut.jpg";
 import dragonImg from "@/assets/cat-dragon.jpg";
 
+import { db } from "@/lib/firebase";
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  doc, 
+  deleteDoc, 
+  updateDoc, 
+  query, 
+  orderBy, 
+  where, 
+  getDoc,
+  serverTimestamp
+} from "firebase/firestore";
+
 export type Category = {
   slug: string;
   name: string;
@@ -28,42 +43,7 @@ export type Product = {
   createdAt?: number;
 };
 
-const PRODUCTS_STORAGE_KEY = "shapline_products_v1";
-const PRODUCTS_UPDATED_EVENT = "shapline_products_updated";
-const PRODUCTS_UPDATED_PUBLIC_EVENT = "productsUpdated";
-
-function readProductsFromStorage(): Product[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as Product[];
-  } catch {
-    return [];
-  }
-}
-
-function writeProductsToStorage(products: Product[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
-  window.dispatchEvent(new Event(PRODUCTS_UPDATED_EVENT));
-  window.dispatchEvent(new Event(PRODUCTS_UPDATED_PUBLIC_EVENT));
-}
-
-function newId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return (crypto as Crypto).randomUUID();
-  }
-  return `p_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
-
-function byCreatedAtDesc(a: Product, b: Product) {
-  const ta = a.createdAt ?? 0;
-  const tb = b.createdAt ?? 0;
-  return tb - ta;
-}
+const PRODUCTS_COLLECTION = "products";
 
 export const categories: Category[] = [
   {
@@ -123,7 +103,6 @@ export const categories: Category[] = [
 ];
 
 export async function getCategories() {
-  // We keep the static categories for structure but they could also be moved to Firestore
   return categories;
 }
 
@@ -132,54 +111,100 @@ export async function getCategory(slug: string) {
 }
 
 export async function getProducts() {
-  return readProductsFromStorage().slice().sort(byCreatedAtDesc);
+  try {
+    const q = query(collection(db, PRODUCTS_COLLECTION), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Product[];
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
 }
 
 export async function getFeaturedProducts() {
-  return readProductsFromStorage()
-    .filter((p) => !!p.featured)
-    .slice()
-    .sort(byCreatedAtDesc);
+  try {
+    const q = query(
+      collection(db, PRODUCTS_COLLECTION), 
+      where("featured", "==", true),
+      orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Product[];
+  } catch (error) {
+    console.error("Error fetching featured products:", error);
+    return [];
+  }
 }
 
 export async function getProduct(id: string) {
-  return readProductsFromStorage().find((p) => p.id === id) ?? null;
+  try {
+    const docRef = doc(db, PRODUCTS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as Product;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return null;
+  }
 }
 
 export async function productsByCategory(slug: string) {
-  return readProductsFromStorage()
-    .filter((p) => p.categorySlug === slug)
-    .slice()
-    .sort(byCreatedAtDesc);
+  try {
+    const q = query(
+      collection(db, PRODUCTS_COLLECTION), 
+      where("categorySlug", "==", slug),
+      orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Product[];
+  } catch (error) {
+    console.error("Error fetching products by category:", error);
+    return [];
+  }
 }
 
 export async function createProduct(input: Omit<Product, "id">) {
-  const products = readProductsFromStorage();
-  const created: Product = {
-    id: newId(),
-    ...input,
-    createdAt: Date.now(),
-  };
-  products.push(created);
-  writeProductsToStorage(products);
-  return created;
+  try {
+    const docRef = await addDoc(collection(db, PRODUCTS_COLLECTION), {
+      ...input,
+      createdAt: Date.now(), // Using Date.now() for consistency with existing sorting logic
+    });
+    return { id: docRef.id, ...input } as Product;
+  } catch (error) {
+    console.error("Error creating product:", error);
+    throw error;
+  }
 }
 
 export async function deleteProduct(id: string) {
-  const products = readProductsFromStorage().filter((p) => p.id !== id);
-  writeProductsToStorage(products);
+  try {
+    const docRef = doc(db, PRODUCTS_COLLECTION, id);
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    throw error;
+  }
 }
 
 export async function updateProduct(id: string, patch: Partial<Omit<Product, "id">>) {
-  const products = readProductsFromStorage();
-  const idx = products.findIndex((p) => p.id === id);
-  if (idx === -1) return null;
-  const updated: Product = {
-    ...products[idx],
-    ...patch,
-    id,
-  };
-  products[idx] = updated;
-  writeProductsToStorage(products);
-  return updated;
+  try {
+    const docRef = doc(db, PRODUCTS_COLLECTION, id);
+    await updateDoc(docRef, patch);
+    const updatedSnap = await getDoc(docRef);
+    return { id: updatedSnap.id, ...updatedSnap.data() } as Product;
+  } catch (error) {
+    console.error("Error updating product:", error);
+    throw error;
+  }
 }
